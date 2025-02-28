@@ -1,0 +1,146 @@
+name: Build Kernel # Name of the workflow
+# This workflow is used to build a custom kernel using GitHub Actions.
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+on:
+  workflow_dispatch: # Manually trigger the workflow
+
+# Environment variables
+defaults: # Default environment variables
+  run:
+    shell: bash # Use bash as the shell
+
+# Jobs
+jobs:
+  build:
+    runs-on: ubuntu-22.04 # Operating system to run the job on
+    steps:
+      - name: Checkout Repository # Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Set Swap Space # Set swap space to prevent errors
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 5 # Set the swap size to 5GB
+
+      - name: Setup Environment Variables # Setup environment variables for the build process
+        run: |
+          # Repositories:
+          echo "TOOLCHAIN_REPO=https://github.com/yourusername/yourtoolchainrepo.git" >> $GITHUB_ENV # URL to the Android kernel toolchain repository.
+          echo "KERNEL_SOURCE_REPO=https://github.com/yourusername/yourkernelrepo.git" >> $GITHUB_ENV # URL to the kernel source repository.
+          echo "ANYKERNEL_REPO=https://github.com/yourusername/youranykernelrepo.git" >> $GITHUB_ENV # URL to the AnyKernel repository.
+          echo "KERNELSU_SETUP_SCRIPT="https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" >> $GITHUB_ENV # URL to the KernelSU setup script.
+          
+          # Toolchain Paths:
+          # Note: The paths below are examples and should be modified according to your toolchain setup.
+          echo "CLANG_PATH=$GITHUB_WORKSPACE/tools/clang/host/linux-x86/clang-r428724/bin" >> $GITHUB_ENV # Path to the Clang compiler binaries.
+          echo "GCC_PATH=$GITHUB_WORKSPACE/tools/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin" >> $GITHUB_ENV # Path to the GCC (aarch64) compiler binaries.
+          echo "GCC32_PATH=$GITHUB_WORKSPACE/tools/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin" >> $GITHUB_ENV # Path to the GCC (arm) compiler binaries.
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/tools/clang/host/linux-x86/clang-r428724/lib64" >> $GITHUB_ENV # Path to the Clang library files.
+
+          # Cross-Compiler Prefixes:
+          # Note: The prefixes below are examples and should be modified according to your toolchain setup.
+          echo "CROSS_COMPILE=$GITHUB_WORKSPACE/tools/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-" >> $GITHUB_ENV # Prefix for the aarch64 cross-compiler.
+          echo "CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/tools/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-" >> $GITHUB_ENV # Prefix for the arm cross-compiler.
+
+          # Build User and Host:
+          # Note: The values below are examples and should be modified according to your build environment.
+          echo "USER=yourusername" >> $GITHUB_ENV # Username for the build process.
+          echo "HOST=$(lsb_release -cs)" >> $GITHUB_ENV # Host information gets the codename of the Ubuntu version.
+
+          # Kernel Configuration and Branch:
+          # Note: The values below are examples and should be modified according to your kernel setup.
+          echo "DEFCONFIG=examples_defconfig" >> $GITHUB_ENV # Default kernel configuration file.
+          echo "KERNEL_BRANCH=main" >> $GITHUB_ENV # Branch of the kernel source repository to use.
+          echo "ANYKERNEL_BRANCH=master" >> $GITHUB_ENV # Branch of the AnyKernel repository to use.
+          echo "BUILD_FLAGS=CC=clang AR=llvm-ar NM=llvm-nm AS=llvm-as STRIP=llvm-strip READELF=llvm-readelf OBJDUMP=llvm-objdump OBJCOPY=llvm-objcopy CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV # Build flags
+
+          # Directory Paths
+          # Note: The paths below are examples and should be modified according to your build environment.
+          echo "TOOLCHAIN_PATH=tools" >> $GITHUB_ENV # Directory where the toolchain will be located.
+          echo "KERNEL_SOURCE_PATH=kernel-source" >> $GITHUB_ENV # Directory where the kernel source will be located.
+          echo "ANYKERNEL_PATH=AnyKernel3" >> $GITHUB_ENV # Directory where AnyKernel will be located.
+
+      - name: Install Dependencies # Install dependencies required for the build process
+      # Note: The dependencies below are examples and should be modified according to your build environment.
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y dialog bash sed wget git curl zip tar jq expect make cmake automake autoconf llvm lld lldb clang gcc binutils bison perl gperf gawk flex bc python3 zstd openssl unzip cpio bc bison build-essential ccache liblz4-tool libsdl1.2-dev libstdc++6 libxml2 libxml2-utils lzop pngcrush schedtool squashfs-tools xsltproc zlib1g-dev libncurses5-dev bzip2 git gcc g++ libssl-dev gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-arm-linux-gnueabi dos2unix kmod python2 rlwrap pigz
+
+      - name: Clone Toolchain and Kernel Source # Clone the toolchain and kernel source repositories
+      # Note: The repositories below are examples and should be modified according to your build environment.
+        run: |
+          git clone --depth=1 ${{ env.TOOLCHAIN_REPO }} ${{ env.TOOLCHAIN_PATH }} # Clone the toolchain repository
+          git clone --depth=1 ${{ env.KERNEL_SOURCE_REPO }} -b ${{ env.KERNEL_BRANCH }} ${{ env.KERNEL_SOURCE_PATH }} # Clone the kernel source repository
+
+      - name: Install KernelSU # Install KernelSU for the kernel source
+      # Note: The setup script is fetched from the KernelSU repository.
+        run: |
+          cd ${{ env.KERNEL_SOURCE_PATH }} # Change directory to the kernel source
+          curl -LSs "${{ env.KERNELSU_SETUP_SCRIPT }}" | bash - # Install KernelSU
+
+      - name: Clean kernel Source # Clean the kernel source directory
+      # Note: This step is optional and can be removed if not needed.
+        run: |
+          cd ${{ env.KERNEL_SOURCE_PATH }} # Change directory to the kernel source
+          make O=out clean
+          make O=out mrproper
+
+      - name: Build Kernel # Build the kernel using the specified configuration
+      # Note: This step will build the kernel make sure to modify the build flags and paths according to your setup.
+        run: |
+          export KBUILD_BUILD_USER=${{ env.USER }} # Set the build user
+          export KBUILD_BUILD_HOST=${{ env.HOST }} # Set the build host
+          export PATH=${{ env.CLANG_PATH }}:${PATH} # Set the Clang path
+          export PATH=${{ env.GCC_PATH }}:${PATH} # Set the GCC path
+          export PATH=${{ env.GCC32_PATH }}:${PATH} # Set the GCC32 path
+          export LD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }}:${LD_LIBRARY_PATH} # Set the LD_LIBRARY_PATH
+          FLAGS="ARCH=arm64 \ 
+          O=out \
+          ${{ env.BUILD_FLAGS }} \
+          CROSS_COMPILE=${{ env.CROSS_COMPILE }} \
+          CROSS_COMPILE_ARM32=${{ env.CROSS_COMPILE_ARM32 }}" # Set the build flags
+          cd ${{ env.KERNEL_SOURCE_PATH }} # Change directory to the kernel source
+          make ${FLAGS} ${{ env.DEFCONFIG }}
+          make -j$(nproc --all) ${FLAGS}
+
+      - name: Zip Kernel # Zip the kernel image depending on the output
+      # Note: This step will zip the kernel image depending on the output.
+        run: |
+          git clone --depth=1 ${{ env.ANYKERNEL_REPO }} -b ${{ env.ANYKERNEL_BRANCH }} ${{ env.ANYKERNEL_PATH }} && rm -rf ${{ env.ANYKERNEL_PATH }}/.git ${{ env.ANYKERNEL_PATH }}/.github ${{ env.ANYKERNEL_PATH }}/LICENSE ${{ env.ANYKERNEL_PATH }}/README.md
+          if [[ -f ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image.gz-dtb ]]; then
+            cp ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image.gz-dtb ${{ env.ANYKERNEL_PATH }}/Image.gz-dtb
+          elif [[ -f ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image-dtb ]]; then
+            cp ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image-dtb ${{ env.ANYKERNEL_PATH }}/Image-dtb
+          elif [[ -f ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image.gz ]]; then
+            cp ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image.gz ${{ env.ANYKERNEL_PATH }}/Image.gz
+          elif [[ -f ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image ]]; then
+            cp ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/Image ${{ env.ANYKERNEL_PATH }}/Image
+          fi
+          if [ -f ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/dtbo.img ]; then
+            cp ${{ env.KERNEL_SOURCE_PATH }}/out/arch/arm64/boot/dtbo.img ${{ env.ANYKERNEL_PATH }}/dtbo.img
+          fi
+
+      - name: Get Kernel Information Before Uploading # Get kernel information before uploading the artifact
+      # Note: The commands below are examples and should be modified according to your kernel setup.
+        id: get_info 
+        run: |
+          cd ${{ env.KERNEL_SOURCE_PATH }} # Change directory to the kernel source
+          if KERNEL_NAME=$(grep -oP 'CONFIG_LOCALVERSION=\K.*' arch/arm64/configs/${{ env.DEFCONFIG }} | tr -d '"' | sed 's/-//g'); then # Get the kernel name from the configuration file
+            echo "KERNEL_NAME=$KERNEL_NAME" >> $GITHUB_ENV
+          else
+            echo "KERNEL_NAME=perf" >> $GITHUB_ENV # Default kernel name if not found
+          fi
+
+          KERNEL_VERSION=$(make kernelversion) # Get the kernel version
+          echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
+
+          DATE=$(date +'%Y%m%d-%H%M%S') # Date and time of the build %Y=Year %m=Month %d=Day %H=Hour %M=Minute %S=Second
+          echo "DATE=$DATE" >> $GITHUB_ENV
+
+      - name: Upload Kernel Artifact # Upload the kernel artifact to the artifacts section
+      # Note: This step will upload the kernel artifact to the artifacts section.
+        uses: actions/upload-artifact@v4 
+        with: 
+          name: ${{ env.KERNEL_NAME }}-${{ env.KERNEL_VERSION }}-${{ env.DATE }} # Name of the artifact
+          path: ${{ env.ANYKERNEL_PATH }}/* # Path to the artifact
