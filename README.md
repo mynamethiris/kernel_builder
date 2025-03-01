@@ -1,4 +1,5 @@
 # Android Kernel Builder
+[![Build Kernel](https://github.com/mynamethiris/kernel_builder/actions/workflows/result.yml/badge.svg)](https://github.com/mynamethiris/kernel_builder/actions/workflows/result.yml)
 
 This repository provides an automated system for building, testing, and packaging custom Android kernels using GitHub Actions. It streamlines the workflow for developers who want to create, test, and deploy custom kernels without needing a local setup. This builder is inspired by work done in the [kernel_build](https://github.com/zclkkk/kernel_build) repository.
 

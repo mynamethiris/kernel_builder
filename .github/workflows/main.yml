@@ -1,4 +1,4 @@
-name: Build Kernel # Name of the workflow
+name: Example Name # Name of the workflow
 # This workflow is used to build a custom kernel using GitHub Actions.
 
 # Controls when the action will run. Triggers the workflow on push or pull request
