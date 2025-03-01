@@ -33,15 +33,15 @@ jobs:
           
           # Toolchain Paths:
           # Note: The paths below are examples and should be modified according to your toolchain setup.
-          echo "CLANG_PATH=$GITHUB_WORKSPACE/tools/clang/host/linux-x86/clang-r428724/bin" >> $GITHUB_ENV # Path to the Clang compiler binaries.
-          echo "GCC_PATH=$GITHUB_WORKSPACE/tools/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin" >> $GITHUB_ENV # Path to the GCC (aarch64) compiler binaries.
-          echo "GCC32_PATH=$GITHUB_WORKSPACE/tools/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin" >> $GITHUB_ENV # Path to the GCC (arm) compiler binaries.
-          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/tools/clang/host/linux-x86/clang-r428724/lib64" >> $GITHUB_ENV # Path to the Clang library files.
+          echo "CLANG_PATH=$GITHUB_WORKSPACE/tools/path/to/clang/bin" >> $GITHUB_ENV # Path to the Clang compiler binaries.
+          echo "GCC_PATH=$GITHUB_WORKSPACE/tools/path/to/gcc64/bin" >> $GITHUB_ENV # Path to the GCC (aarch64) compiler binaries.
+          echo "GCC32_PATH=$GITHUB_WORKSPACE/tools/path/to/gcc32/bin" >> $GITHUB_ENV # Path to the GCC (arm) compiler binaries.
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/tools/path/to/ld-library/lib64" >> $GITHUB_ENV # Path to the Clang library files.
 
           # Cross-Compiler Prefixes:
           # Note: The prefixes below are examples and should be modified according to your toolchain setup.
-          echo "CROSS_COMPILE=$GITHUB_WORKSPACE/tools/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-" >> $GITHUB_ENV # Prefix for the aarch64 cross-compiler.
-          echo "CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/tools/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-" >> $GITHUB_ENV # Prefix for the arm cross-compiler.
+          echo "CROSS_COMPILE=$GITHUB_WORKSPACE/tools/path/to/gcc64/bin/aarch64-linux-android-" >> $GITHUB_ENV # Prefix for the aarch64 cross-compiler.
+          echo "CROSS_COMPILE_ARM32=$GITHUB_WORKSPACE/tools/path/to/gcc32/bin/arm-linux-androideabi-" >> $GITHUB_ENV # Prefix for the arm cross-compiler.
 
           # Build User and Host:
           # Note: The values below are examples and should be modified according to your build environment.
