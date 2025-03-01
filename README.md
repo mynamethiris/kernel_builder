@@ -55,8 +55,8 @@ The build process is controlled through environment variables defined in the rep
 2. **Clone Your Fork:**
 
     ```bash
-    git clone https://github.com/yourusername/android_kernel_builder.git
-    cd android_kernel_builder
+    git clone https://github.com/yourusername/kernel_builder.git
+    cd kernel_builder
     ```
 
 3. **Configure Environment Variables:** Define the following environment variables in your repository's settings (**Settings > Secrets and variables > Actions > New repository secret**) or directly in the `main.yml` workflow file if you prefer.
